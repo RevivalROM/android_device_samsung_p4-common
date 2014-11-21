@@ -1,0 +1,49 @@
+# RIL
+/dev/s3c2410_serial3                                u:object_r:radio_device:s0
+/dev/onedram                                        u:object_r:radio_device:s0
+/radio/modem.bin                                    u:object_r:rild_file:s0
+
+/dev/umts_boot0                             u:object_r:radio_device:s0
+/dev/umts_boot1                             u:object_r:radio_device:s0
+/dev/umts_ipc0                              u:object_r:radio_device:s0
+/dev/umts_ramdump0                          u:object_r:radio_device:s0
+/dev/umts_rfs0                              u:object_r:radio_device:s0
+
+/dev/block/mmcblk0p8                        u:object_r:efs_block_device:s0
+
+# Bluetooth
+/dev/s3c2410_serial0                                u:object_r:hci_attach_dev:s0
+
+/dev/ttyO1                                  u:object_r:hci_attach_dev:s0
+/efs/bluetooth/(/.*)?                       u:object_r:bluetooth_efs_file:s0
+
+# GFX
+/system/vendor/bin/pvrsrvinit                       u:object_r:pvrsrvinit_exec:s0
+
+/dev/dsscomp                                u:object_r:video_device:s0
+
+# GPS
+/dev/s3c2410_serial1                                u:object_r:gps_device:s0
+
+/dev/ttyO0                                  u:object_r:gps_device:s0
+
+# TV-Out
+/system/bin/tvoutserver                             u:object_r:tvoutserver_exec:s0
+/system/bin/tvouthack                               u:object_r:tvouthack_exec:s0
+
+# Advanced settings
+# TODO: sysfs_writable may not be a good choice
+/sys/class/misc/pwm_duty/pwm_duty                   u:object_r:sysfs_writable:s0
+/sys/devices/virtual/misc/voodoo_sound/(.*)         u:object_r:sysfs_writable:s0
+
+# Wifi
+/dev/rfkill                                 u:object_r:rfkill_device:s0
+/efs/wifi/.mac.info                         u:object_r:wifi_data_file:s0
+
+# System binaries
+/system/vendor/bin/pvrsrvinit               u:object_r:pvrsrvinit_exec:s0
+/system/vendor/bin/pvrsrvctl_SGX540_120     u:object_r:pvrsrvinit_exec:s0
+
+# Firmwares
+/system/vendor/firmware/ducati-m3.bin       u:object_r:firmware_ducati:s0
+
