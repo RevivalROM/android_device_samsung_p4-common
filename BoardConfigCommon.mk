@@ -33,7 +33,7 @@ TARGET_CPU_SMP := true
 ARCH_ARM_HAVE_TLS_REGISTER := true
 ARCH_ARM_USE_NON_NEON_MEMCPY := true
 # prof79 seen by others - does what exactly?
-#ARCH_ARM_HIGH_OPTIMIZATION := true
+ARCH_ARM_HIGH_OPTIMIZATION := true
 
 TARGET_NO_BOOTLOADER := true
 
@@ -53,7 +53,9 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/samsung/p4-common/bluetoot
 BOARD_KERNEL_BASE := 0x10000000
 # put SELinux into audit mode temporarily
 # See: http://source.android.com/devices/tech/security/selinux/implement.html
-BOARD_KERNEL_CMDLINE := androidboot.selinux=permissive
+# This S***** breaks the build!!!
+#BOARD_KERNEL_CMDLINE := androidboot.selinux=permissive
+BOARD_KERNEL_CMDLINE := 
 BOARD_PAGE_SIZE := 2048
 
 # Wifi related defines
@@ -82,6 +84,8 @@ BOARD_EGL_CFG := device/samsung/p4-common/configs/egl.cfg
 #BOARD_USES_HGL := true
 #BOARD_USES_OVERLAY := true
 USE_OPENGL_RENDERER := true
+# this was enabled on cm-11.0 for p1
+BOARD_EGL_WORKAROUND_BUG_10194508 := true
 
 # Audio
 COMMON_GLOBAL_CFLAGS += -DICS_AUDIO_BLOB
@@ -132,7 +136,7 @@ BOARD_SUPPRESS_EMMC_WIPE := true
 #TARGET_ARCH_LOWMEM := true
 
 # SELinux
-# imported from p1-common (cm-11.0)
+# imported from p1-common and p5100 (cm-11.0)
 BOARD_SEPOLICY_DIRS += \
     device/samsung/p4-common/sepolicy
 
@@ -150,8 +154,7 @@ BOARD_SEPOLICY_UNION += \
     wpa_supplicant.te
 
 # this was enabled on cm-11.0 for p1
-#TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := true
-#BOARD_EGL_WORKAROUND_BUG_10194508 := true
+TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := true
 
 # TWRP Flags
 DEVICE_RESOLUTION := 1280x800
@@ -168,4 +171,3 @@ TW_NO_EXFAT := true
 SP1_NAME := "efs"
 SP1_BACKUP_METHOD := files
 SP1_MOUNTABLE := 1
-

@@ -1,39 +1,37 @@
 import init.p3.usb.rc
 
-#on early-init
-#    mount debugfs debugfs /sys/kernel/debug
+on early-init
+    mount debugfs debugfs /sys/kernel/debug
 
 on init
     # See storage config details at http://source.android.com/tech/storage/
     mkdir /mnt/shell/emulated 0700 shell shell
-    mkdir /storage 0751 root sdcard_r
+    mkdir /storage 0050 system sdcard_r
     mkdir /storage/emulated 0555 root root
+    mkdir /storage/emulated/legacy 0555 root root
+
+    mkdir /mnt/media_rw/usbdrive0 0700 media_rw media_rw
+    #mkdir /mnt/media_rw/usbdisk0 0700 media_rw media_rw
 
     # create directory for mounting usb drives
-    #mkdir /storage/usbdisk0 0664 system system
-    mkdir /storage/usbdisk0 0700 root root
-
-    mkdir /mnt/media_rw/usbdisk0 0700 media_rw media_rw
+    mkdir /storage/usbdrive0 0700 root root
+    #mkdir /storage/usbdisk0 0700 root root
 
     export EXTERNAL_STORAGE /storage/emulated/legacy
     export EMULATED_STORAGE_SOURCE /mnt/shell/emulated
     export EMULATED_STORAGE_TARGET /storage/emulated
-    # no SECONDARY_STORAGE
+    # no SECONDARY_STORAGE?
+    #export SECONDARY_STORAGE /storage/usbdrive0
 
     # Support legacy paths
+    symlink /mnt/shell/emulated/0 /storage/emulated/legacy    
     symlink /storage/emulated/legacy /sdcard
     symlink /storage/emulated/legacy /mnt/sdcard
     symlink /storage/emulated/legacy /storage/sdcard0
-    symlink /mnt/shell/emulated/0 /storage/emulated/legacy
 
     # for backwards compatibility
-    symlink /storage/usbdisk0 /usbdrive
-    symlink /storage/usbdisk0 /mnt/usbdrive
-    symlink /storage/usbdisk0 /usbdisk0
-    symlink /storage/usbdisk0 /mnt/usbdisk0
-
-    #mkdir /efs 0771 system system
-    #mkdir /efs 0771 radio system
+    symlink /storage/usbdrive0 /usbdrive
+    symlink /storage/usbdrive0 /mnt/usbdrive
 
     # Disable CFQ slice idle delay
     write /sys/block/mmcblk0/queue/iosched/slice_idle 0
@@ -55,11 +53,12 @@ on fs
 
     # We chown/chmod /efs because mount is run as root + defaults
     chown radio system /efs
-    chmod 0775 /efs
+    chmod 0771 /efs
 
     setprop ro.crypto.fuse_sdcard true
 
-    mount debugfs /sys/kernel/debug /sys/kernel/debug
+    # could be here
+    #mount debugfs /sys/kernel/debug /sys/kernel/debug
 
     setprop ro.crypto.tmpfs_options size=128m,mode=0771,uid=1000,gid=1000
 
@@ -72,57 +71,52 @@ on fs
     restorecon /efs/.nv_data.bak.md5
     restorecon /efs/.nv_state
     restorecon /efs/bluetooth/bt_addr
-    restorecon /efs/FactoryApp/factorymode
-    restorecon /efs/FactoryApp/hw_ver
-    restorecon /efs/FactoryApp/keystr
-    restorecon /efs/FactoryApp/serial_no
     restorecon /efs/imei/mps_code.dat
     restorecon /efs/wifi/.mac.info
+    # Maybe a good idea?
+    restorecon /efs/wifi/.nvmac.info
+    restorecon /efs/imei/.nvmac.info
+    restorecon /efs/imei/bt.txt
+    # "FactoryApp" not present on the p4 Android 4.2.2
+    #restorecon /efs/FactoryApp/factorymode
+    #restorecon /efs/FactoryApp/hw_ver
+    #restorecon /efs/FactoryApp/keystr
+    #restorecon /efs/FactoryApp/serial_no
 
 on post-fs-data
     # we will remap this as /storage/sdcard0 with the sdcard fuse tool
     mkdir /data/media 0770 media_rw media_rw
-    #chown media_rw media_rw /data/media
 
+    mkdir /data/wifi 0771 wifi wifi
+    # next two might be 0771
     mkdir /data/misc/wifi 0770 wifi system
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+
+    # might be 0771
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    mkdir /data/misc/dhcpcd 0770 dhcp dhcp
 
     # change back to bluetooth from system
     chown bluetooth net_bt_stack /data/misc/bluetooth
 
-    # see above
-    # Fuse sdcard
-    #setprop ro.crypto.fuse_sdcard true
-
-    chown system radio /efs
-    chmod 0775 /efs
-    mkdir /efs/wifi
-    chown radio system /efs/wifi
-    chmod 0775 /efs/wifi
+    mkdir /efs/wifi 0775 radio system
 
     # For P3
-    mkdir /efs/wifi/mac
-    chown wifi wifi /efs/wifi/mac
-    chmod 0775 /efs/wifi/mac
+    mkdir /efs/wifi/mac 0775 wifi wifi
 
     chown system radio /efs/wifi/.mac.info
     chown system radio /data/.mac.info
     chmod 0664 /efs/wifi/.mac.info
     chmod 0664 /data/.mac.info
+
     # For P4VZW
     chown radio system /efs/nv_data.bin.md5
     chown radio system /efs/nv_data.bin
     chmod 0770 /efs/nv_data.bin.md5
     chmod 0770 /efs/nv_data.bin
 
-    mkdir /data/wifi 0771 wifi wifi
-    #mkdir /data/misc/wifi 0771 wifi wifi
-    #mkdir /data/misc/wifi/sockets 0771 wifi wifi
-
-    mkdir /data/misc/dhcp 0771 dhcp dhcp
     chmod 0664 /system/etc/wifi/wpa_supplicant.conf
-
-    mkdir /data/misc/dhcpcd 0771 dhcp dhcp
 
 # Change Permission /data/app for booting time
     chmod 0771 /data/app
@@ -143,39 +137,25 @@ on post-fs-data
   # Found in P4
 
     # DRM directory creation
-    mkdir /system/etc/security/.drm 0775
-    chown root root /system/etc/security/.drm
-    chmod 0775 /system/etc/security/.drm
+    mkdir /system/etc/security/.drm 0775 root root
 
     # Added for Playready DRM Support
-    mkdir /data/data/.drm 0775
-    chown drm system /data/data/.drm
-    chmod 0775 /data/data/.drm
-    mkdir /data/data/.drm/.playready 0775
-    chown drm system /data/data/.drm/.playready
-    chmod 0775 /data/data/.drm/.playready
+    mkdir /data/data/.drm 0775 drm system
+    mkdir /data/data/.drm/.playready 0775 drm system
 
     # Added drm folder to copy drm plugins
-    mkdir /system/lib/drm 0775
-    chown root root /system/lib/drm
-    chmod 0775 /system/lib/drm
+    mkdir /system/lib/drm 0775 root root
 
     # DivX DRM
     mkdir /efs/.files 0775
-    mkdir /efs/.files/.dx1 0775
-    mkdir /efs/.files/.dm33 0775
-    mkdir /efs/.files/.mp301 0775
-    chown media system /efs/.files/.dx1
-    chown media system /efs/.files/.dm33
-    chown media system /efs/.files/.mp301
-    chmod 0775 /efs/.files/.dx1
-    chmod 0775 /efs/.files/.dm33
-    chmod 0775 /efs/.files/.mp301
+
+    mkdir /efs/.files/.dx1 0775 media system
+    mkdir /efs/.files/.dm33 0775 media system
+    mkdir /efs/.files/.mp301 0775 media system
 
 # create log system for radio
     mkdir /data/log 0775 system log
-    chown system log /data/log
-    chmod 0775 /data/log
+
     chmod 0775 /data/anr
 
 # HATP Result Dir
@@ -251,6 +231,7 @@ on boot
     chmod 0660 /dev/mpuirq
     chmod 0660 /dev/accelirq
     chmod 0660 /dev/timerirq
+
     # For P3
     chmod 0660 /sys/class/sensors/accelerometer_sensor/p3_accel_cal
 
@@ -316,32 +297,46 @@ on boot
 
 # GPS perms
 on property:my.gps=novzw
-    chown root system /dev/ttyHS0
-    chmod 0664 /dev/ttyHS0
-    chown root system /sys/class/sec/gps/pwr_en
-    chmod 0664 /sys/class/sec/gps/pwr_en
-    chown root system /sys/class/sec/gps/nrst
-    chmod 0664 /sys/class/sec/gps/nrst
-    mkdir /data/gps 771 system system
-    chown system system /data/gps
+    # see below - novzw service is user gps, group system
 
-on property:my.gps=vzw
+    # create data/gps for GPS demon
+    # ? chown root system /dev/ttyHS0
+    # ? chmod 0664 /dev/ttyHS0
     chown gps gps /dev/ttyHS0
     chmod 0600 /dev/ttyHS0
-    mkdir /data/gps 771 system system
-    chown system system /data/gps
-# create data/gps for GPS demon
-    mkdir /data/gps 771 gps system
+
+    chown root system /sys/class/sec/gps/pwr_en
+    chmod 0664 /sys/class/sec/gps/pwr_en
+
+    chown root system /sys/class/sec/gps/nrst
+    chmod 0664 /sys/class/sec/gps/nrst
+
+    # system system ?
+    mkdir /data/gps 0771 gps system
     chown gps system /data/gps
     chmod 0771 /data/gps
 
+on property:my.gps=vzw
+    # see below - novzw service is user system, group system
+
+    # create data/gps for GPS demon
+    # gps gps ?
+    chown system system /dev/ttyHS0
+    chmod 0600 /dev/ttyHS0
+
+    mkdir /data/gps 0771 system system
+    chown system system /data/gps
+    chmod 0771 /data/gps
+
 service p2p_supplicant /system/bin/wpa_supplicant \
-        -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -N \
-        #-I/system/etc/wifi/wpa_supplicant_overlay.conf \
-        -O/data/misc/wifi/sockets -N \
-        -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
-        -puse_p2p_group_interface=1 -e/data/misc/wifi/entropy.bin \
-        -g@android:wpa_wlan0
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    #-I/system/etc/wifi/wpa_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -N \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
+    #-I/system/etc/wifi/p2p_supplicant_overlay.conf \
+    -puse_p2p_group_interface=1
+    -e/data/misc/wifi/entropy.bin
+    -g@android:wpa_wlan0
     #   we will start as root and wpa_supplicant will switch to user wifi
     #   after setting up the capabilities required for WEXT
     #   user wifi
@@ -355,7 +350,7 @@ service wpa_supplicant /system/bin/wpa_supplicant \
     -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
     #-I/system/etc/wifi/wpa_supplicant_overlay.conf \
     -O/data/misc/wifi/sockets \
-    -e/data/misc/wifi/entropy.bin \
+    -e/data/misc/wifi/entropy.bin
     -g@android:wpa_wlan0
     #   we will start as root and wpa_supplicant will switch to user wifi
     #   after setting up the capabilities required for WEXT
@@ -365,6 +360,14 @@ service wpa_supplicant /system/bin/wpa_supplicant \
     socket wpa_wlan0 dgram 660 wifi wifi
     disabled
     oneshot
+
+# from eg. asus/flo
+#on property:init.svc.wpa_supplicant=stopped
+#    stop dhcpcd
+#
+#on property:ro.data.large_tcp_window_size=true
+#    # Adjust socket buffer to enlarge TCP receive window for high bandwidth (e.g. DO-RevB)
+#    write /proc/sys/net/ipv4/tcp_adv_win_scale 1
 
 service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
     class main
@@ -421,12 +424,23 @@ service gps-daemon /system/bin/gpsd
 
 # create virtual SD card at /storage/sdcard0, based on the /data/media directory
 # daemon will drop to user/group system/media_rw after initializing
-service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+#
+# Jelly Bean (4.2):
+#
+# shell@android:/system/bin # sdcard --help
+# no dest path specified
+# usage: sdcard [-t<threads>] <source_path> <dest_path> <uid> <gid>
+#     -t<threads>: specify number of threads to use, default -t2
+#
+#service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+service sdcard /system/bin/sdcard /data/media /mnt/shell/emulated 1023 1023
     class late_start
     oneshot
 
+# will only do in KitKat it seems
 # FUSE sdcard daemon for rich permissions (runs as media_rw)
-service fuse_usbdisk0 /system/bin/sdcard -u 1023 -g 1023 -w 1023 -d /mnt/media_rw/usbdisk0 /storage/usbdisk0
+#service fuse_usbdrive0 /system/bin/sdcard -u 1023 -g 1023 -w 1023 -d /mnt/media_rw/usbdrive0 /storage/usbdrive0
+service fuse_usbdrive0 /system/bin/sdcard /mnt/media_rw/usbdrive0 /storage/usbdrive0 1023 1023
     class late_start
     disabled
 
@@ -437,16 +451,32 @@ service bugreport /system/bin/dumpstate -d -v -o /data/storage/bugreports/bugrep
     oneshot
     keycodes 115 114
 
-# Try deprecate it
+# Deprecated in KitKat I guess
 # Mount usb drives as /usbdrive0. Generally usb drives are formatted with FAT
 # filesystem, so we support FAT as of now.
-#on device-added-/sys/block/sda
-#    mount vfat /dev/block/sda /storage/usbdrive0
-#
-#on device-removed-/sys/block/sda
-#    umount /storage/usbdrive0
+on device-added-/sys/block/sda
+    #mount vfat /dev/block/sda /storage/usbdrive0
+    mount auto /dev/block/sda /storage/usbdrive0
+
+on device-removed-/sys/block/sda
+    umount /storage/usbdrive0
 
 # For 3g tabs
+#  shell@android:/sbin # cbd -h                                                   
+#  <3>cbd: /main: start cp boot
+#  <3>cbd: /main: Default Modem type = 1
+#  <3>cbd: /main: Default Boot link = 4
+#  <3>cbd: /main: Default Main link = 4
+#  Cp Boot Daemon
+#  Usage:  -p modem partition no.
+#   [OPTION]
+#   [OPTION]
+#   -h Usage
+#   -t modem Type [cmc22x, xmm626x]
+#   -d Daemon mode
+#   -o options
+#  	t: EHCI Tegra	u: CP Ramdump test	r: run with root -b Boot link [d, h, s]
+#   -m Main link [d, h]
 service cpboot-daemon /sbin/cbd -d -o t -p 7
     class main
     user root
@@ -454,4 +484,3 @@ service cpboot-daemon /sbin/cbd -d -o t -p 7
 
 service battery_charger /charger
     class charger
-
